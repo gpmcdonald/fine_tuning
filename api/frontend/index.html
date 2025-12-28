@@ -3,40 +3,90 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SyMoNeuRaL • Local Image Generator</title>
+  <title>SyMoNeuRaL • Image Generator</title>
 
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <div class="wrap">
-    <div class="card">
-      <header>
-        <div class="title">SyMoNeuRaL Image Generator</div>
-        <div class="pill">
-          <span class="dot good" id="healthDot"></span>
-          <span id="healthText">checking…</span>
-        </div>
-      </header>
-
-      <div class="body">
-        <label for="prompt">Prompt</label>
-        <textarea id="prompt" placeholder="snowy Carolina Hurricanes arena"></textarea>
-
-        <div class="row">
-          <button id="generateBtn">Generate Image</button>
-          <button class="ghost" id="clearBtn">Clear</button>
-        </div>
-
-        <div class="log" id="log"></div>
+  <!-- ───────── TOP BAR ───────── -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">Sy</div>
+      <div>
+        <div class="title">SyMoNeuRaL</div>
+        <div class="subtitle">Image Generator (local)</div>
       </div>
     </div>
 
-    <div class="card imgbox">
-      <img id="resultImage" hidden />
-    </div>
-  </div>
+    <button id="toggleChatBtn" class="sidekick-btn">
+      SyMoNeuRaL Sidekick
+    </button>
+  </header>
 
-  <script src="./app.js"></script>
+  <!-- ───────── MAIN ───────── -->
+  <main class="main">
+
+    <!-- HERO / MARKETING -->
+    <section class="hero">
+      <h1>
+        This ain’t AI.<br/>
+        <span>It’s SyMoNeuRaL.</span>
+      </h1>
+
+      <p>
+        Describe what you want to create.
+        SyMoNeuRaL Intelligence interprets your intent and generates the image —
+        <strong>locally, without cloud shortcuts.</strong>
+      </p>
+
+      <p>
+        Not sure what to write?
+        Ask the <strong>Sidekick</strong> for ideas, styles, or refinements.
+      </p>
+    </section>
+
+    <!-- IMAGE GENERATOR -->
+    <section class="generator">
+      <label for="prompt">
+        What should SyMoNeuRaL generate?
+      </label>
+
+      <input
+        id="prompt"
+        type="text"
+        placeholder="Describe the image you want SyMoNeuRaL to create…"
+      />
+
+      <div class="actions">
+        <button id="generateBtn">Generate Image</button>
+        <button id="clearBtn" class="secondary">Clear</button>
+      </div>
+
+      <img id="resultImage" hidden />
+
+      <pre id="log"></pre>
+    </section>
+  </main>
+
+  <!-- ───────── SIDEKICK PANEL ───────── -->
+  <aside id="chatPanel" aria-hidden="true">
+    <header>
+      <span>SyMoNeuRaL Sidekick</span>
+      <button id="closeChatBtn" class="secondary">✕</button>
+    </header>
+
+    <div id="chatLog"></div>
+
+    <textarea
+      id="chatBox"
+      rows="3"
+      placeholder="Ask for prompt ideas, styles, or how SyMoNeuRaL works…"
+    ></textarea>
+
+    <button id="sendChatBtn">Send</button>
+  </aside>
+
+  <script src="app.js"></script>
 </body>
 </html>

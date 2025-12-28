@@ -1,91 +1,74 @@
-const healthDot = document.getElementById("healthDot");
-const healthText = document.getElementById("healthText");
-const logBox = document.getElementById("log");
-const img = document.getElementById("resultImage");
+const toggleChatBtn = document.getElementById("toggleChatBtn");
+const closeChatBtn = document.getElementById("closeChatBtn");
+const chatPanel = document.getElementById("chatPanel");
 
 const promptBox = document.getElementById("prompt");
 const generateBtn = document.getElementById("generateBtn");
 const clearBtn = document.getElementById("clearBtn");
+const img = document.getElementById("resultImage");
+const logBox = document.getElementById("log");
 
-/* ---------- helpers ---------- */
+const chatLog = document.getElementById("chatLog");
+const chatBox = document.getElementById("chatBox");
+const sendChatBtn = document.getElementById("sendChatBtn");
 
-function log(msg) {
-  logBox.textContent += msg + "\n";
-  logBox.scrollTop = logBox.scrollHeight;
+let history = [];
+
+/* ─── Sidekick ─────────────────────────── */
+toggleChatBtn.onclick = () => chatPanel.classList.add("open");
+closeChatBtn.onclick = () => chatPanel.classList.remove("open");
+
+function addChat(role, text){
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
 }
 
-/* ---------- health check ---------- */
-
-async function checkHealth() {
-  try {
-    const res = await fetch("/health");
-    const json = await res.json();
-
-    healthDot.className = "dot good";
-    healthText.textContent = json.status ?? "ok";
-  } catch {
-    healthDot.className = "dot bad";
-    healthText.textContent = "offline";
-  }
-}
-
-/* ---------- image generation ---------- */
-
+/* ─── Image Generation ─────────────────── */
 generateBtn.onclick = async () => {
   const prompt = promptBox.value.trim();
-  if (!prompt) return;
+  if(!prompt) return;
 
   generateBtn.disabled = true;
-  log("Generating image…");
+  logBox.textContent = "Generating image...\n";
 
-  try {
-    const res = await fetch(
-      `/image?prompt=${encodeURIComponent(prompt)}`,
-      { method: "POST" }
-    );
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text);
-    }
-
+  try{
+    const res = await fetch(`/image?prompt=${encodeURIComponent(prompt)}`, {method:"POST"});
     const json = await res.json();
 
-    if (!json || !json.image_path) {
-      throw new Error("API did not return image_path");
-    }
+    if(!json.image_path) throw new Error("No image returned");
 
-    /*
-      Convert:
-        C:\Users\...\outputs\images\file.png
-      Into:
-        /outputs/images/file.png
-    */
-    const url =
-      "/outputs" +
-      json.image_path
-        .replace(/\\/g, "/")
-        .split("outputs")[1];
-
+    const url = "/outputs" + json.image_path.replace(/\\/g,"/").split("outputs")[1];
     img.src = url;
     img.hidden = false;
 
-    log("Image ready ✔");
-  } catch (e) {
-    log("ERROR: " + (e?.message ?? e));
+    logBox.textContent += "✔ Image ready\n";
+  }catch(e){
+    logBox.textContent += "ERROR: " + e.message + "\n";
   }
 
   generateBtn.disabled = false;
 };
 
-/* ---------- clear ---------- */
-
 clearBtn.onclick = () => {
   promptBox.value = "";
-  logBox.textContent = "";
   img.hidden = true;
+  logBox.textContent = "";
 };
 
-/* ---------- init ---------- */
+/* ─── Chat (Phase A stub) ───────────────── */
+sendChatBtn.onclick = () => {
+  const msg = chatBox.value.trim();
+  if(!msg) return;
 
-checkHealth();
+  addChat("user", msg);
+  chatBox.value = "";
+
+  // Placeholder intelligent response
+  addChat(
+    "assistant",
+    "Try adding style, lighting, or camera details. For example: cinematic lighting, shallow depth of field."
+  );
+};

@@ -1,0 +1,208 @@
+:root{
+  --bg:#0b0f14;
+  --panel:#111822;
+  --panel2:#0f151d;
+  --text:#eaf2ff;
+  --muted:#9fb0c7;
+  --line:rgba(255,255,255,.10);
+  --good:#2dd4bf;
+  --bad:#f87171;
+  --btn:#2563eb;
+  --btn2:#1f2937;
+  --radius:16px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background:
+    radial-gradient(1200px 700px at 15% 10%, rgba(37,99,235,.25), transparent 60%),
+    radial-gradient(900px 600px at 90% 20%, rgba(45,212,191,.15), transparent 60%),
+    var(--bg);
+  color:var(--text);
+}
+
+/* ─── TOP BAR ───────────────────────────── */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+  background:rgba(17,24,34,.85);
+  backdrop-filter:blur(12px);
+}
+
+.brand{display:flex; gap:12px; align-items:center}
+.logo{
+  width:38px;height:38px;
+  border-radius:12px;
+  display:grid;place-items:center;
+  font-weight:900;
+  background:linear-gradient(135deg,#2563eb,#22d3ee);
+}
+
+.title{font-weight:900}
+.subtitle{font-size:12px;color:var(--muted)}
+
+.sidekick-btn{
+  background:linear-gradient(135deg,#2563eb,#22d3ee);
+  border:none;
+  color:#fff;
+  padding:10px 16px;
+  border-radius:999px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+/* ─── MAIN LAYOUT ───────────────────────── */
+.main{
+  max-width:1080px;
+  margin:0 auto;
+  padding:48px 20px;
+}
+
+.hero{
+  max-width:760px;
+  margin-bottom:40px;
+}
+
+.hero h1{
+  font-size:44px;
+  line-height:1.05;
+  margin:0 0 16px;
+}
+
+.hero h1 span{
+  color:#93c5fd;
+  text-shadow:0 0 24px rgba(147,197,253,.35);
+}
+
+.hero p{
+  font-size:18px;
+  color:var(--muted);
+  margin:10px 0;
+}
+
+/* ─── GENERATOR PANEL ───────────────────── */
+.generator{
+  background:rgba(17,24,34,.9);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:24px;
+  max-width:760px;
+}
+
+.generator label{
+  display:block;
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:8px;
+}
+
+.generator input{
+  width:100%;
+  padding:14px 16px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:rgba(15,21,29,.95);
+  color:var(--text);
+  font-size:16px;
+}
+
+.actions{
+  display:flex;
+  gap:12px;
+  margin-top:16px;
+}
+
+button{
+  padding:12px 18px;
+  border-radius:14px;
+  border:none;
+  font-weight:800;
+  cursor:pointer;
+}
+
+button:not(.secondary){
+  background:linear-gradient(135deg,#2563eb,#22d3ee);
+  color:white;
+}
+
+button.secondary{
+  background:var(--btn2);
+  color:var(--text);
+}
+
+#resultImage{
+  width:100%;
+  margin-top:20px;
+  border-radius:14px;
+  border:1px solid var(--line);
+}
+
+#log{
+  margin-top:16px;
+  padding:12px;
+  background:rgba(15,21,29,.9);
+  border-radius:12px;
+  border:1px solid var(--line);
+  color:var(--muted);
+  min-height:100px;
+}
+
+/* ─── SIDEKICK PANEL ────────────────────── */
+#chatPanel{
+  position:fixed;
+  top:0;
+  right:0;
+  width:420px;
+  max-width:92vw;
+  height:100vh;
+  background:rgba(17,24,34,.96);
+  border-left:1px solid var(--line);
+  transform:translateX(110%);
+  transition:transform .25s ease;
+  z-index:200;
+  display:flex;
+  flex-direction:column;
+}
+
+#chatPanel.open{transform:translateX(0)}
+
+#chatPanel header{
+  padding:16px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-weight:900;
+}
+
+#chatLog{
+  flex:1;
+  padding:14px;
+  overflow:auto;
+}
+
+.msg{
+  padding:12px 14px;
+  border-radius:14px;
+  margin-bottom:10px;
+  font-size:14px;
+}
+
+.msg.user{background:rgba(37,99,235,.18)}
+.msg.assistant{background:rgba(45,212,191,.15)}
+
+#chatBox{
+  border:none;
+  border-top:1px solid var(--line);
+  padding:14px;
+  background:rgba(15,21,29,.95);
+  color:var(--text);
+  resize:none;
+}
