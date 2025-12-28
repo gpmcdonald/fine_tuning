@@ -1,6 +1,6 @@
 .venv/
 __pycache__/
 *.pyc
-pip_freeze*.txt
+pip_freeze_full.txt
 inventory.txt
-tree.txt
+SyMoNeuRaL_Bot_Prod_*.zip
