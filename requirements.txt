@@ -1,0 +1,15 @@
+# Core LLM tooling (LoRA / PEFT) — pinned for reproducible Windows builds
+transformers==4.46.3
+datasets==2.21.0
+accelerate==0.34.2
+peft==0.13.2
+safetensors==0.4.5
+
+# HF tokenizer/model deps (Windows-friendly)
+tokenizers==0.20.1
+sentencepiece==0.2.0
+protobuf==4.25.5
+
+# Quality-of-life + numeric stack (pin to avoid ABI weirdness)
+tqdm==4.67.1
+numpy==1.26.4
