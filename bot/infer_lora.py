@@ -1,162 +1,163 @@
+# bot/infer_lora.py
+from __future__ import annotations
+
 import os
+import argparse
+from pathlib import Path
+from typing import Optional
+
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
 
-def env(name: str, default: str = "") -> str:
-    v = os.environ.get(name, default)
-    return v if v is not None else default
+# ---------- Paths / Defaults ----------
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+DEFAULT_BASE_MODEL = os.environ.get("SYM_BASE_MODEL", "Qwen/Qwen2.5-3B-Instruct")
+DEFAULT_ADAPTER_DIR = os.environ.get(
+    "SYM_ADAPTER_DIR",
+    str(REPO_ROOT / "bot" / "adapters" / "my_qwen_lora_baseline_20251228-004"),
+)
+
+# Generation defaults (safe + sane)
+DEFAULT_MAX_NEW_TOKENS = int(os.environ.get("SYM_MAX_NEW_TOKENS", "256"))
+DEFAULT_TEMPERATURE = float(os.environ.get("SYM_TEMPERATURE", "0.7"))
+DEFAULT_TOP_P = float(os.environ.get("SYM_TOP_P", "0.9"))
 
 
-def read_text_file(path: str) -> str:
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        return ""
-    except Exception as e:
-        return f"[WARN] Could not read {path}: {e}"
+# ---------- Internal loader cache ----------
+_MODEL = None
+_TOKENIZER = None
+_DEVICE = None
 
 
-def build_anchor_system() -> str:
+def _pick_device(prefer: Optional[str] = None) -> str:
     """
-    Automatic factual anchor (can be disabled or extended with env vars).
-
-    Env:
-      - SYM_ANCHOR=0 disables built-in anchor
-      - SYM_FACTS="..." appends extra facts
-      - SYM_FACTS_FILE="path/to/facts.txt" appends facts from a file
-      - SYM_STYLE="..." style instruction (default: 2-4 sentences, practical)
+    prefer: "cuda" | "cpu" | None
     """
-    if env("SYM_ANCHOR", "1").strip() in ("0", "false", "False", "no", "NO"):
-        return ""
+    if prefer == "cpu":
+        return "cpu"
+    if prefer == "cuda":
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    return "cuda" if torch.cuda.is_available() else "cpu"
 
-    style = env("SYM_STYLE", "Explain SyMoNeuRaL accurately and practically in 2-4 sentences.").strip()
 
-    built_in = (
-        "You are Symon, Garrett's assistant for the SyMoNeuRaL ecosystem.\n\n"
-        "Facts you must follow:\n"
-        "- SyMoNeuRaL is Garrett's self-hosted, offline-first AI-driven web platform/ecosystem.\n"
-        "- It includes apps like status dashboards, utilities, and an image generator pipeline.\n"
-        "- It is NOT neurotechnology, NOT a brain interface, and NOT medical.\n"
-        "- If unsure, say you are unsure instead of inventing details.\n\n"
-        "Task:\n"
-        f"{style}"
+def _load_once(
+    base_model: str,
+    adapter_dir: str,
+    device: str,
+):
+    global _MODEL, _TOKENIZER, _DEVICE
+
+    if _MODEL is not None and _TOKENIZER is not None and _DEVICE == device:
+        return _MODEL, _TOKENIZER
+
+    print(f"[+] Device: {device}")
+    print(f"[+] Adapter dir: {adapter_dir}")
+    print(f"[+] Base model: {base_model}")
+
+    _TOKENIZER = AutoTokenizer.from_pretrained(base_model, use_fast=True)
+
+    # Load base
+    base = AutoModelForCausalLM.from_pretrained(
+        base_model,
+        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+        device_map="auto" if device == "cuda" else None,
     )
 
-    extra_facts = env("SYM_FACTS", "").strip()
-    facts_file = env("SYM_FACTS_FILE", "").strip()
-    file_facts = read_text_file(facts_file).strip() if facts_file else ""
+    # Apply LoRA adapter
+    _MODEL = PeftModel.from_pretrained(base, adapter_dir)
+    _MODEL.eval()
 
-    extras = []
-    if file_facts:
-        extras.append(file_facts)
-    if extra_facts:
-        extras.append(extra_facts)
+    if device == "cpu":
+        _MODEL.to("cpu")
 
-    if extras:
-        built_in += "\n\nAdditional facts:\n" + "\n".join(extras)
+    _DEVICE = device
+    return _MODEL, _TOKENIZER
 
-    return built_in.strip()
+
+def run_inference(
+    prompt: str,
+    *,
+    base_model: str = DEFAULT_BASE_MODEL,
+    adapter_dir: str = DEFAULT_ADAPTER_DIR,
+    device: Optional[str] = None,
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
+    temperature: float = DEFAULT_TEMPERATURE,
+    top_p: float = DEFAULT_TOP_P,
+) -> str:
+    """
+    Stable function API for the rest of the monorepo.
+    Returns generated text.
+    """
+    prompt = (prompt or "").strip()
+    if not prompt:
+        return ""
+
+    chosen_device = _pick_device(device)
+    model, tok = _load_once(base_model, adapter_dir, chosen_device)
+
+    # Qwen Instruct-style chat template (robust)
+    messages = [
+        {"role": "system", "content": "You are SyMoNeuRaL Bot. Be helpful, concise, and accurate."},
+        {"role": "user", "content": prompt},
+    ]
+
+    text = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = tok(text, return_tensors="pt")
+
+    if chosen_device == "cuda":
+        inputs = {k: v.to("cuda") for k, v in inputs.items()}
+
+    with torch.no_grad():
+        out = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=(temperature > 0),
+            temperature=temperature,
+            top_p=top_p,
+            eos_token_id=tok.eos_token_id,
+            pad_token_id=tok.eos_token_id,
+        )
+
+    decoded = tok.decode(out[0], skip_special_tokens=True)
+
+    # Try to return only the assistant part (best-effort)
+    # If parsing fails, return full decoded text.
+    # Many chat templates include the user prompt; we trim by the last user prompt occurrence.
+    idx = decoded.rfind(prompt)
+    if idx != -1:
+        return decoded[idx + len(prompt):].strip()
+
+    return decoded.strip()
 
 
 def main():
-    out_dir = os.path.abspath(env("OUT_DIR", "my_qwen_lora"))
-    base_model = env("BASE_MODEL", "Qwen/Qwen2.5-3B-Instruct")
-
-    user_system = env("SYSTEM", "").strip()
-    prompt = env("PROMPT", "").strip()
-
-    temp = float(env("SYM_TEMP", "0.7"))
-    top_p = float(env("TOP_P", "0.9"))
-    max_new_tokens = int(env("MAX_NEW_TOKENS", "160"))
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    torch_dtype = torch.float16 if device == "cuda" else torch.float32
-
-    print(f"[+] Device: {device}")
-    print(f"[+] Adapter dir: {out_dir}")
-    print(f"[+] Base model: {base_model}")
-
-    tokenizer = AutoTokenizer.from_pretrained(base_model, use_fast=True, trust_remote_code=True)
-
-    # Ensure PAD is set (Qwen often uses eos as pad)
-    if tokenizer.pad_token_id is None:
-        tokenizer.pad_token = tokenizer.eos_token
-
-    # Left padding is safer for decoder-only models when padding=True
-    tokenizer.padding_side = "left"
-
-    base = AutoModelForCausalLM.from_pretrained(
-        base_model,
-        device_map="auto" if device == "cuda" else None,
-        torch_dtype=torch_dtype,  # IMPORTANT: transformers expects torch_dtype (not dtype)
-        trust_remote_code=True,
-    )
-
-    model = PeftModel.from_pretrained(base, out_dir)
-    model.eval()
-
-    if not prompt:
-        raise SystemExit("PROMPT is empty. Set $env:PROMPT before running.")
-
-    anchor_system = build_anchor_system()
-
-    messages = []
-    if anchor_system:
-        messages.append({"role": "system", "content": anchor_system})
-    if user_system:
-        # User system goes AFTER anchor so anchor remains highest priority
-        messages.append({"role": "system", "content": user_system})
-    messages.append({"role": "user", "content": prompt})
-
-    text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
-    inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        padding=True,
-    )
-
-    input_ids = inputs["input_ids"].to(model.device)
-    attention_mask = inputs["attention_mask"].to(model.device)
-
-    do_sample = True if temp > 0 else False
-
-    # Avoid warnings from inherited generation_config flags (top_k etc) when sampling is off
-    model.generation_config.do_sample = do_sample
-    if not do_sample:
-        for k in ("temperature", "top_p", "top_k", "typical_p", "min_p"):
-            if hasattr(model.generation_config, k):
-                setattr(model.generation_config, k, None)
-
-    gen_kwargs = dict(
-        input_ids=input_ids,
-        attention_mask=attention_mask,
-        max_new_tokens=max_new_tokens,
-        pad_token_id=tokenizer.pad_token_id,
-        eos_token_id=tokenizer.eos_token_id,
-    )
-
-    if do_sample:
-        gen_kwargs.update(
-            dict(
-                temperature=temp,
-                top_p=top_p,
-            )
-        )
-
-    with torch.no_grad():
-        outputs = model.generate(**gen_kwargs)
-
-    new_tokens = outputs[0, input_ids.shape[1]:]
-    answer = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--prompt", required=True)
+    ap.add_argument("--base-model", default=DEFAULT_BASE_MODEL)
+    ap.add_argument("--adapter-dir", default=DEFAULT_ADAPTER_DIR)
+    ap.add_argument("--device", default=None, help="cuda|cpu|auto")
+    ap.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
+    ap.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
+    ap.add_argument("--top-p", type=float, default=DEFAULT_TOP_P)
+    args = ap.parse_args()
 
     print("\n--- PROMPT ---")
-    print(prompt)
+    print(args.prompt)
     print("\n--- OUTPUT ---")
-    print(answer)
+    print(
+        run_inference(
+            args.prompt,
+            base_model=args.base_model,
+            adapter_dir=args.adapter_dir,
+            device=args.device if args.device != "auto" else None,
+            max_new_tokens=args.max_new_tokens,
+            temperature=args.temperature,
+            top_p=args.top_p,
+        )
+    )
 
 
 if __name__ == "__main__":

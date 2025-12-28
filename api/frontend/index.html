@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SyMoNeuRaL • Local Image Generator</title>
+
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div class="title">SyMoNeuRaL Image Generator</div>
+        <div class="pill">
+          <span class="dot good" id="healthDot"></span>
+          <span id="healthText">checking…</span>
+        </div>
+      </header>
+
+      <div class="body">
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" placeholder="snowy Carolina Hurricanes arena"></textarea>
+
+        <div class="row">
+          <button id="generateBtn">Generate Image</button>
+          <button class="ghost" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+    <div class="card imgbox">
+      <img id="resultImage" hidden />
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
