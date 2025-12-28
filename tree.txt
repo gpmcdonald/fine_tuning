@@ -1,25 +1,13 @@
 Folder PATH listing
 Volume serial number is 6EB4-1DFA
 C:.
-|   audit_dataset.py
-|   audit_requirements.py
-|   BASELINE.md
-|   dev_specification.txt
-|   infer_lora.py
-|   inventory.txt
-|   pip_freeze.txt
-|   pip_freeze_full.txt
+|   .gitignore
 |   README.md
 |   recreate.ps1
 |   requirements.txt
 |   run.bat
 |   run.ps1
-|   symoneural_base.jsonl
-|   symoneural_v1_1.jsonl
-|   symoneural_v1_2.jsonl
-|   symon_facts_v1_2.txt
-|   test_infer.ps1
-|   train_lora.py
+|   SyMoNeuRaL_Bot_Prod_20251228-0312.zip
 |   tree.txt
 |   
 +---.venv
@@ -29,6 +17,7 @@ C:.
 |   +---Lib
 |   |   \---site-packages
 |   |       |   distutils-precedence.pth
+|   |       |   git_filter_repo.py
 |   |       |   isympy.py
 |   |       |   numpy-1.26.4-cp310-cp310-win_amd64.whl
 |   |       |   six.py
@@ -1416,6 +1405,18 @@ C:.
 |   |       |   \---__pycache__
 |   |       |           __init__.cpython-310.pyc
 |   |       |           
+|   |       +---git_filter_repo-2.47.0.dist-info
+|   |       |       COPYING
+|   |       |       COPYING.gpl
+|   |       |       COPYING.mit
+|   |       |       entry_points.txt
+|   |       |       INSTALLER
+|   |       |       METADATA
+|   |       |       RECORD
+|   |       |       REQUESTED
+|   |       |       top_level.txt
+|   |       |       WHEEL
+|   |       |       
 |   |       +---google
 |   |       |   +---protobuf
 |   |       |   |   |   any_pb2.py
@@ -38208,6 +38209,7 @@ C:.
 |   |       |           __init__.cpython-310.pyc
 |   |       |           
 |   |       \---__pycache__
+|   |               git_filter_repo.cpython-310.pyc
 |   |               isympy.cpython-310.pyc
 |   |               six.cpython-310.pyc
 |   |               typing_extensions.cpython-310.pyc
@@ -38226,6 +38228,7 @@ C:.
 |   |       f2py.exe
 |   |       get_gprof
 |   |       get_objgraph
+|   |       git-filter-repo.exe
 |   |       hf.exe
 |   |       huggingface-cli.exe
 |   |       isympy.exe
@@ -38247,15 +38250,41 @@ C:.
 |           \---man1
 |                   isympy.1
 |                   
-\---my_qwen_lora_baseline_20251228-004
-        adapter_config.json
-        adapter_model.safetensors
-        added_tokens.json
-        merges.txt
-        README.md
-        special_tokens_map.json
-        tokenizer.json
-        tokenizer_config.json
-        training_args.bin
-        vocab.json
-        
++---api
+|   \---routes
++---bot
+|   |   audit_dataset.py
+|   |   audit_requirements.py
+|   |   infer_lora.py
+|   |   test_infer.ps1
+|   |   train_lora.py
+|   |   
+|   +---adapters
+|   |   \---my_qwen_lora_baseline_20251228-004
+|   |           adapter_config.json
+|   |           adapter_model.safetensors
+|   |           added_tokens.json
+|   |           merges.txt
+|   |           README.md
+|   |           special_tokens_map.json
+|   |           tokenizer.json
+|   |           tokenizer_config.json
+|   |           training_args.bin
+|   |           vocab.json
+|   |           
+|   \---data
+|           symoneural_base.jsonl
+|           symoneural_v1_1.jsonl
+|           symoneural_v1_2.jsonl
+|           
++---diffusion
++---docs
+|       BASELINE.md
+|       dev_specification.txt
+|       inventory.txt
+|       pip_freeze.txt
+|       pip_freeze_full.txt
+|       symon_facts_v1_2.txt
+|       
+\---outputs
+    \---images
