@@ -10,7 +10,6 @@ from typing import Optional
 import torch
 from diffusers import StableDiffusionPipeline
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = Path(os.environ.get("SYM_OUT_DIR", str(REPO_ROOT / "outputs" / "images")))
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -19,6 +18,7 @@ DEFAULT_MODEL = os.environ.get("SYM_SD_MODEL", "runwayml/stable-diffusion-v1-5")
 
 _PIPE = None
 _DEVICE = None
+_MODEL_ID = None
 
 
 def _slug(s: str) -> str:
@@ -35,12 +35,48 @@ def _pick_device(prefer: Optional[str] = None) -> str:
     return "cuda" if torch.cuda.is_available() else "cpu"
 
 
+def describe() -> dict:
+    """Return a small diagnostic dict about pipeline/device state."""
+    cuda_ok = torch.cuda.is_available()
+    gpu_name = None
+    if cuda_ok:
+        try:
+            gpu_name = torch.cuda.get_device_name(0)
+        except Exception:
+            gpu_name = "cuda"
+
+    return {
+        "torch": getattr(torch, "__version__", "unknown"),
+        "cuda_available": bool(cuda_ok),
+        "gpu": gpu_name,
+        "loaded": _PIPE is not None,
+        "device": _DEVICE,
+        "model_id": _MODEL_ID,
+        "out_dir": str(OUT_DIR),
+    }
+
+
 def _load_pipe_once(model_id: str, device: str):
-    global _PIPE, _DEVICE
-    if _PIPE is not None and _DEVICE == device:
+    global _PIPE, _DEVICE, _MODEL_ID
+    if _PIPE is not None and _DEVICE == device and _MODEL_ID == model_id:
         return _PIPE
 
     dtype = torch.float16 if device == "cuda" else torch.float32
+
+    # Optional verbose banner
+    if os.environ.get("SYM_WORKER_VERBOSE", "0") == "1":
+        info = describe()
+        print(
+            "[pipeline] loading\n"
+            f"  model_id: {model_id}\n"
+            f"  device:   {device}\n"
+            f"  dtype:    {dtype}\n"
+            f"  torch:    {info['torch']}\n"
+            f"  cuda:     {info['cuda_available']}\n"
+            f"  gpu:      {info['gpu']}\n"
+            f"  out_dir:  {info['out_dir']}\n",
+            flush=True,
+        )
 
     pipe = StableDiffusionPipeline.from_pretrained(
         model_id,
@@ -50,7 +86,6 @@ def _load_pipe_once(model_id: str, device: str):
 
     if device == "cuda":
         pipe = pipe.to("cuda")
-        # optional memory saver
         try:
             pipe.enable_attention_slicing()
         except Exception:
@@ -60,7 +95,19 @@ def _load_pipe_once(model_id: str, device: str):
 
     _PIPE = pipe
     _DEVICE = device
+    _MODEL_ID = model_id
+
+    if os.environ.get("SYM_WORKER_VERBOSE", "0") == "1":
+        print("[pipeline] loaded OK", flush=True)
+
     return _PIPE
+
+
+def warmup(model_id: str = DEFAULT_MODEL, device: Optional[str] = None) -> dict:
+    """Force-load the pipeline once at startup, return diagnostic state."""
+    chosen_device = _pick_device(device)
+    _load_pipe_once(model_id, chosen_device)
+    return describe()
 
 
 def generate_image(
@@ -74,9 +121,6 @@ def generate_image(
     height: int = 512,
     seed: Optional[int] = None,
 ) -> str:
-    """
-    Generate an image and return the saved file path (string).
-    """
     prompt = (prompt or "").strip()
     if not prompt:
         raise ValueError("prompt is empty")
@@ -103,6 +147,10 @@ def generate_image(
 
     image = result.images[0]
     image.save(out_path)
+
+    if os.environ.get("SYM_WORKER_VERBOSE", "0") == "1":
+        print(f"[pipeline] saved: {out_path}", flush=True)
+
     return str(out_path)
 
 
@@ -118,7 +166,13 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--device", default=None, help="cuda|cpu|auto")
     ap.add_argument("--model", default=DEFAULT_MODEL)
+    ap.add_argument("--warmup", action="store_true")
     args = ap.parse_args()
+
+    if args.warmup:
+        os.environ["SYM_WORKER_VERBOSE"] = os.environ.get("SYM_WORKER_VERBOSE", "1")
+        info = warmup(model_id=args.model, device=args.device if args.device != "auto" else None)
+        print(info)
 
     path = generate_image(
         args.prompt,
