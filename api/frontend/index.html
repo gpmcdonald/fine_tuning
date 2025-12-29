@@ -3,40 +3,121 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SyMoNeuRaL • Local Image Generator</title>
+  <title>SyMoNeuRaL • Image + Chat</title>
 
-  <link rel="stylesheet" href="./style.css" />
+  <meta http-equiv="Cache-Control" content="no-store, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
+
 <body>
+  <div class="bg"></div>
 
-  <div class="wrap">
-    <div class="card">
-      <header>
-        <div class="title">SyMoNeuRaL Image Generator</div>
-        <div class="pill">
-          <span class="dot good" id="healthDot"></span>
-          <span id="healthText">checking…</span>
-        </div>
-      </header>
-
-      <div class="body">
-        <label for="prompt">Prompt</label>
-        <textarea id="prompt" placeholder="snowy Carolina Hurricanes arena"></textarea>
-
-        <div class="row">
-          <button id="generateBtn">Generate Image</button>
-          <button class="ghost" id="clearBtn">Clear</button>
-        </div>
-
-        <div class="log" id="log"></div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">S</div>
+      <div class="title">
+        <div class="name">SyMoNeuRaL Image Generator</div>
+        <div class="sub">Queue worker • Credits-ready • Offline-first</div>
       </div>
     </div>
 
-    <div class="card imgbox">
-      <img id="resultImage" hidden />
+    <div class="status">
+      <span id="apiDot" class="dot bad"></span>
+      <span id="apiText" class="statustext">down</span>
     </div>
-  </div>
+  </header>
 
-  <script src="./app.js"></script>
+  <main class="grid">
+    <!-- IMAGE PANEL -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Image</h2>
+        <div class="pill">Queue Mode</div>
+      </div>
+
+      <label class="label" for="prompt">Prompt</label>
+      <textarea id="prompt" class="textarea" rows="4" placeholder="snowy Carolina Hurricanes arena..."></textarea>
+
+      <div class="row">
+        <div class="field">
+          <label class="label" for="steps">Steps</label>
+          <input id="steps" class="input" type="number" value="28" min="1" max="80">
+        </div>
+        <div class="field">
+          <label class="label" for="guidance">Guidance</label>
+          <input id="guidance" class="input" type="number" value="7.5" step="0.1" min="0" max="30">
+        </div>
+        <div class="field">
+          <label class="label" for="width">W</label>
+          <input id="width" class="input" type="number" value="512" min="256" max="1536">
+        </div>
+        <div class="field">
+          <label class="label" for="height">H</label>
+          <input id="height" class="input" type="number" value="512" min="256" max="1536">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field grow">
+          <label class="label" for="seed">Seed (optional)</label>
+          <input id="seed" class="input" type="number" placeholder="leave blank for random">
+        </div>
+        <div class="field grow">
+          <label class="label" for="model">Model ID (optional)</label>
+          <input id="model" class="input" type="text" placeholder="leave blank to use server default">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btnGenerate" class="btn primary">Generate</button>
+        <button id="btnClear" class="btn">Clear</button>
+      </div>
+
+      <div class="meta">
+        <div id="imgMeta" class="muted">No job yet.</div>
+        <div id="jobMeta" class="muted"></div>
+      </div>
+
+      <div id="imgResult" class="result">
+        <div class="hint">Generated image will appear here after the worker completes the job.</div>
+      </div>
+    </section>
+
+    <!-- CHAT PANEL -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Chat</h2>
+        <div class="pill">SyMon</div>
+      </div>
+
+      <div id="chatLog" class="chatlog">
+        <div class="chatmsg bot">
+          <div class="chatmsg-head">SyMon</div>
+          <div class="chatmsg-body">Hello. Ask me anything — or ask for prompt ideas.</div>
+        </div>
+      </div>
+
+      <div class="chatbar">
+        <textarea id="chatInput" class="chatinput" rows="2" placeholder="Ask SyMon… (Ctrl+Enter to send)"></textarea>
+        <div class="chatbuttons">
+          <button id="btnChatSend" class="btn primary">Send</button>
+          <button id="btnChatClear" class="btn">Clear</button>
+        </div>
+      </div>
+
+      <div class="hint small">
+        Tip: Ask “give me 5 prompt ideas for ___” then click one to auto-fill the prompt.
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer muted">
+    Phase-B Queue Restore • /image/jobs + worker polling • outputs served from /outputs/images
+  </footer>
+
+  <script src="/static/app.js"></script>
 </body>
 </html>
