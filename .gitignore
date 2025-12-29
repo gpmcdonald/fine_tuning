@@ -9,3 +9,8 @@ outputs/
 image_response.txt
 nul
 _rescue/
+
+# local helpers
+run_api.py
+run_worker.py
+README_git_note.txt
