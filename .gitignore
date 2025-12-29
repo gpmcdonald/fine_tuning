@@ -4,3 +4,8 @@ __pycache__/
 pip_freeze_full.txt
 inventory.txt
 SyMoNeuRaL_Bot_Prod_*.zip
+outputs/
+*.log
+image_response.txt
+nul
+_rescue/
