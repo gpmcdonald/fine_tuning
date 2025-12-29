@@ -1,16 +1,35 @@
+# =========================
+# Python / Virtual Env
+# =========================
 .venv/
 __pycache__/
 *.pyc
-pip_freeze_full.txt
-inventory.txt
-SyMoNeuRaL_Bot_Prod_*.zip
+*.pyo
+*.pyd
+
+# =========================
+# Build / Runtime Artifacts
+# =========================
 outputs/
 *.log
 image_response.txt
 nul
+
+# =========================
+# Local Backups / Recovery
+# =========================
 _rescue/
 
-# Local helper scripts and notes
+# =========================
+# Local Dev Artifacts
+# =========================
+pip_freeze_full.txt
+inventory.txt
+SyMoNeuRaL_Bot_Prod_*.zip
+
+# =========================
+# Local Helper Scripts (not committed)
+# =========================
 run_api.py
 run_worker.py
 README_git_note.txt
